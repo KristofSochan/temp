@@ -29,7 +29,7 @@ SharedMemory::~SharedMemory() {
     segmentListMutex.lock();
     for (Segment* segment : segments) {
         free(segment->start);
-        free(segment);
+        delete segment;
     }
     segmentListMutex.unlock();
 

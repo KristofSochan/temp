@@ -12,9 +12,8 @@ Transaction::~Transaction() {
     }
 
     for (auto entry : write_set) {
-        // TODO: FREE
-        // free(entry.second->new_value);
-        // delete &entry;
+        free(entry.second->new_value);
+        delete(entry.second);
     }
 }
 void Transaction::add_read(const void* addr, uint64_t version) {
@@ -23,8 +22,10 @@ void Transaction::add_read(const void* addr, uint64_t version) {
 
 void Transaction::add_write(void* addr, void* ptr_to_value, uint64_t version, size_t size_to_write) {
     // Delete the old entry if it exists
-    if (write_set.find(addr) != write_set.end()) {
-        delete write_set[addr];
+    auto it = write_set.find(addr);
+    if (it != write_set.end()) {
+        free(it->second->new_value);
+        delete it->second;
     }
 
     void* new_val = malloc(size_to_write);
