@@ -13,13 +13,6 @@
  * Only the interface (i.e. exported symbols and semantic) must be preserved.
 **/
 
-// Requested features
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE   200809L
-#ifdef __STDC_NO_ATOMICS__
-    #error Current C11 compiler does not support atomic operations
-#endif
-
 // External headers
 
 // Internal headers
