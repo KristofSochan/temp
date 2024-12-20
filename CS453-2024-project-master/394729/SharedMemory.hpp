@@ -44,7 +44,7 @@ public:
     void unlock_set(void* addr);
 
     std::mutex segmentListMutex;
-    void add_segment(void* start, size_t size)
+    void add_segment(void* start, size_t size);
 };
 
 #endif // SHARED_MEMORY_H

@@ -54,6 +54,7 @@ void utils_unlock_set(SharedMemory* shared_mem, Transaction* transaction, void* 
  * @return Opaque shared memory region handle, 'invalid_shared' on failure
 **/
 shared_t tm_create(size_t size, size_t align) noexcept {
+    std::cout << "TM_CREATE USER CALL: " << size << ", " << align << std::endl;
     // Allocate and initialize the shared memory region
     try {
         return static_cast<shared_t>(new SharedMemory(size, align));
@@ -102,11 +103,10 @@ size_t   tm_align(shared_t shared) noexcept {
  * @param is_ro  Whether the transaction is read-only
  * @return Opaque transaction ID, 'invalid_tx' on failure
 **/
-int counter = 0;
+int counter = 1;
 tx_t tm_begin(shared_t shared, bool is_ro) noexcept {
-    std::cout << "BEGIN TRANSACTION USER CALL: " << counter++ << ", " << is_ro << std::endl;
     SharedMemory* shared_mem = static_cast<SharedMemory*>(shared);
-    
+    std::cout << "BEGIN TRANSACTION USER CALL: " << counter++ << ", " << is_ro << std::endl;
     // Create a new Transaction object
     Transaction* tx = new Transaction(shared_mem->get_version_clock(), is_ro);
 
