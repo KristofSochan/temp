@@ -160,6 +160,7 @@ private:
     **/
     bool long_tx(size_t& nbaccounts) const {
         return transactional(tm, Transaction::Mode::read_only, [&](Transaction& tx) {
+            std::cout << "DEBUG: LONG_TX TRANSACTION STARTED\n\n" << std::endl;
             auto count = 0ul; // Total number of accounts seen.
             auto sum   = Balance{0}; // Total balance on all seen accounts + parity ammount.
             auto start = tm.get_start(); // The list of accounts starts at the first word of the shared memory region.
@@ -170,13 +171,19 @@ private:
                 sum += segment.parity; // We also sum the money that results from the destruction of accounts.
                 for (decltype(count) i = 0; i < segment_count; ++i) {
                     Balance local = segment.accounts[i];
-                    if (unlikely(local < 0)) // If one account has a negative balance, there's a consistency issue.
+                    if (unlikely(local < 0)) { // If one account has a negative balance, there's a consistency issue.
+                        std::cout << "local was negative! That's our issue." << local << std::endl;
                         return false;
+                    }
                     sum += local;
                 }
                 start = segment.next; // Accounts are stored in linked segments, we move to the next one.
             }
             nbaccounts = count;
+            if (sum != static_cast<Balance>(init_balance * count)) { // Consistency check: no money should ever be destroyed or created out of thin air.
+                std::cout << "sum was not equal to balance * count! That's our issue." << sum << " " << init_balance << " " << count << std::endl;
+                return sum == static_cast<Balance>(init_balance * count); // Consistency check: no money should ever be destroyed or created out of thin air.
+            }
             return sum == static_cast<Balance>(init_balance * count); // Consistency check: no money should ever be destroyed or created out of thin air.
         });
     }
@@ -185,6 +192,7 @@ private:
     **/
     void alloc_tx(size_t trigger) const {
         return transactional(tm, Transaction::Mode::read_write, [&](Transaction& tx) {
+            std::cout << "DEBUG: NEW ALLOC_TX TRANSACTION STARTED\n\n" << std::endl;
             auto count = 0ul; // Total number of accounts seen.
             void* prev = nullptr;
             auto start = tm.get_start();
@@ -231,6 +239,7 @@ private:
     **/
     bool short_tx(size_t send_id, size_t recv_id) const {
         return transactional(tm, Transaction::Mode::read_write, [&](Transaction& tx) {
+            std::cout << "DEBUG: SHORT_TX TRANSACTION STARTED\n\n" << std::endl;
             void* send_ptr = nullptr;
             void* recv_ptr = nullptr;
 
@@ -304,9 +313,10 @@ public:
         ::std::gamma_distribution<float> alloc_trigger(expnbaccounts, 1);
         size_t count = nbaccounts;
         for (size_t cntr = 0; cntr < nbtxperwrk; ++cntr) {
+            std::cout << "Entered this loop " << cntr + 1 << " times" << std::endl;
             if (long_dist(engine)) { // We roll a dice and, if "lucky", run a long transaction.
                 if (unlikely(!long_tx(count))) // If it fails, then we return an error message.
-                    return "Violated isolation or atomicity";
+                    return "Violated isolation or atomicity here ";
             } else if (alloc_dist(engine)) { // Let's roll a dice again to trigger an allocation transaction.
                 alloc_tx(alloc_trigger(engine));
             } else { // No luck with previous rolls, let's just run a short transaction.
@@ -317,8 +327,11 @@ public:
         { // Last long transaction
             size_t dummy;
             if (!long_tx(dummy))
-                return "Violated isolation or atomicity";
+                return "Violated isolation or atomicity there";
         }
+        size_t dummy;
+        if (!long_tx(dummy))
+            return "Violated isolation or atomicity there";
         return nullptr;
     }
     /**

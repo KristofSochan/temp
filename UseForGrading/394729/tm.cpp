@@ -102,7 +102,9 @@ size_t   tm_align(shared_t shared) noexcept {
  * @param is_ro  Whether the transaction is read-only
  * @return Opaque transaction ID, 'invalid_tx' on failure
 **/
+int counter = 0;
 tx_t tm_begin(shared_t shared, bool is_ro) noexcept {
+    std::cout << "BEGIN TRANSACTION USER CALL: " << counter++ << ", " << is_ro << std::endl;
     SharedMemory* shared_mem = static_cast<SharedMemory*>(shared);
     
     // Create a new Transaction object
